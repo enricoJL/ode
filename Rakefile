@@ -22,6 +22,9 @@ require "buildr/javacc"
 require "buildr/jetty"
 require "buildr/hibernate"
 
+Buildr::Hibernate::REQUIRES[:xdoclet] = Buildr.group("xdoclet", "xdoclet-xdoclet-module", "xdoclet-hibernate-module", 
+:under=>"xdoclet", :version=>"1.2.3") + ["xdoclet:xjavadoc:jar:1.1-j5"] 
+
 require File.join(File.dirname(__FILE__), 'repositories.rb')
 require File.join(File.dirname(__FILE__), 'dependencies.rb')
 
@@ -207,7 +210,8 @@ define "ode" do
         GERONIMO.transaction, GERONIMO.kernel, GERONIMO.connector, TRANQL, HSQLDB, JAVAX.ejb,
         OPENJPA, XERCES, XALAN, LOG4J, SLF4J,
         DOM4J, HIBERNATE,
-        "tranql:tranql-connector-derby-common:jar:1.1"
+        "tranql:tranql-connector-derby-common:jar:1.1",
+        "jmock:jmock:jar:1.2.0"
 
     package :jar
   end
@@ -291,7 +295,7 @@ define "ode" do
     dao_hibernate = project("dao-hibernate").compile.target
     bpel_store = project("bpel-store").compile.target
 
-    Buildr::Hibernate::REQUIRES[:xdoclet] =  Buildr.group("xdoclet", "xdoclet-xdoclet-module", "xdoclet-hibernate-module",
+    hibernate_requires[:xdoclet] = Buildr.group("xdoclet", "xdoclet-xdoclet-module", "xdoclet-hibernate-module", 
       :under=>"xdoclet", :version=>"1.2.3") + ["xdoclet:xjavadoc:jar:1.1-j5"] + projects("dao-hibernate")
 
     export = lambda do |properties, source, target|
@@ -299,8 +303,8 @@ define "ode" do
         mkpath File.dirname(target), :verbose=>false
         # Protection against a buildr bug until the fix is released, avoids build failure
 
-        class << task ; attr_accessor :ant ; end
-        task.enhance { |task| task.ant = Buildr::Hibernate.schemaexport }
+        #class << task ; attr_accessor :ant ; end
+        #task.enhance { |task| task.ant = Buildr::Hibernate.schemaexport }
        
         hibernate_schemaexport target do |task, ant|
           ant.schemaexport(:properties=>properties.to_s, :quiet=>"yes", :text=>"yes", :delimiter=>";",
