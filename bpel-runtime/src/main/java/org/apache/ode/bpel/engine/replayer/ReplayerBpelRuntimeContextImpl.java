@@ -96,6 +96,18 @@ public class ReplayerBpelRuntimeContextImpl extends BpelRuntimeContextImpl {
         __log.debug("invoke");
         AnswerResult answerResult = replayerContext.answers.fetchAnswer(partnerLink.partnerLink.partnerRolePortType.getQName(), operation.getName(), outgoingMessage, getCurrentEventDateTime());
 
+//        if (answerResult.isSync) {
+//        	if (answerResult.e == null) {
+//        		// if it couldn't retrieve the answer, it means that the service type 
+//        		// has changed: invoke normally.
+//        		return super.invoke(aid, partnerLink, operation, outgoingMessage, channel);
+//        	} else {
+//            	// need to fetch answer from collaborative process, thus synchronizing 
+//        		// message exchanges with the other processes.
+//            	return null;        		
+//        	}
+//        } else 
+        
         if (answerResult.isLive) {
             return super.invoke(aid, partnerLink, operation, outgoingMessage, channel);
         } else {

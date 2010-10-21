@@ -126,10 +126,10 @@ public class Replayer {
                 if (remainingExchanges.size() > 0) {
                 	//throw new RemainingExchangesException(remainingExchanges);
                 	//log remaining exchanges for now
-                	__log.info("Remaining exchanges ---");
+                	__log.debug("Remaining exchanges :");
                 	for (Exchange e : remainingExchanges) {
-                		__log.info(e.toString());
-                		__log.info("--------");
+                		__log.debug(e.toString());
+                		__log.debug("--------");
                 	}
                 }
             }
@@ -245,9 +245,18 @@ public class Replayer {
                                 __log.debug("creating new instance via live communication mex:" + mex);
                                 ProcessInstanceDAO newInstance = processDAO.createInstance(routing.correlator);
 
-                                ReplayerContext context = new ReplayerContext(null);
-                                context.bpelEngine = (BpelEngineImpl) engine;
-                                contexts.add(context);
+                                // try to retrieve existing context first
+                                ReplayerContext context = null;
+                                for (ReplayerContext c : contexts) {
+                                	if ( c.replayerConfig != null ) 
+                                		if ( c.replayerConfig.getProcessType() == p.getPID() ) 
+                                			context = c;
+                                }
+                                if (context == null) {
+                                    context = new ReplayerContext(null);
+                                    context.bpelEngine = (BpelEngineImpl) engine;
+                                    contexts.add(context);
+                                }
 
                                 ReplayerBpelRuntimeContextImpl runtimeContext = new ReplayerBpelRuntimeContextImpl(p, newInstance, new PROCESS(p.getOProcess()), mex,
                                 // time,
@@ -258,6 +267,26 @@ public class Replayer {
                                 // first receive is matched to provided
                                 // mex
                                 runtimeContext.execute();
+                                
+                                //live instance case
+                                //creating all message exchanges after process instance started
+                                if (context.replayerConfig != null) {
+                                	final List<Exchange> exchangeList = context.replayerConfig.getExchangeList();
+	                                for (int i = 0; i < exchangeList.size(); i++) {
+	                                    Exchange e2 = exchangeList.get(i);
+	                                    if (e2.getType() == ExchangeType.M) {
+	                                        MyRoleMessageExchangeImpl mex2;
+											try {
+												mex2 = ReplayerBpelRuntimeContextImpl.createMyRoleMex(e2, context.bpelEngine);
+											} catch (Exception e) {
+												throw new IllegalStateException("Couln't create message exchange from exchange:" + e2
+														+ " process PID:" + p.getPID());												
+											}
+	                                        runtimeContext.updateMyRoleMex(mex2);
+	                                        context.scheduleInvoke(e2, mex2);
+	                                    }
+	                                }
+                                }
                                 return true;
                             } else if (routing.messageRoute != null) {
                                 long iid = routing.messageRoute.getTargetInstance().getInstanceId();

@@ -33,6 +33,13 @@
     <element name="event-info" type="pmapi:tEventInfo"/>
     <element name="event-info-list" type="pmapi:tEventInfoList"/>
 
+	<simpleType name="InstanceType">
+		<restriction base="string">
+            <enumeration value="initiator"/>
+            <enumeration value="live"/>
+        </restriction>	
+	</simpleType>
+	
     <simpleType name="ExchangeType">
         <restriction base="string">
             <enumeration value="M"/>
@@ -109,6 +116,7 @@
         <sequence>
             <element name="processType" type="QName" />
             <element name="rollbackOnFault" type="boolean" minOccurs="0" default="true"/>
+            <element name="instanceType" type="pmapi:InstanceType" minOccurs="0" default="initiator"/>
 
             <element name="serviceConfig" maxOccurs="unbounded">
                 <complexType>
