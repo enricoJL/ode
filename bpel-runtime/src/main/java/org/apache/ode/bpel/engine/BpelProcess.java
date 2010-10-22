@@ -774,7 +774,7 @@ public class BpelProcess {
         return _lastUsed;
     }
 
-    QName getProcessType() {
+    public QName getProcessType() {
         return _pconf.getType();
     }
 

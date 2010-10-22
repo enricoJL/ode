@@ -50,6 +50,7 @@ import org.apache.ode.bpel.iapi.Scheduler.JobDetails;
 import org.apache.ode.bpel.iapi.Scheduler.JobType;
 import org.apache.ode.bpel.pmapi.CommunicationType;
 import org.apache.ode.bpel.pmapi.ExchangeType;
+import org.apache.ode.bpel.pmapi.InstanceType;
 import org.apache.ode.bpel.pmapi.FaultType;
 import org.apache.ode.bpel.pmapi.GetCommunication;
 import org.apache.ode.bpel.pmapi.GetCommunicationResponse;
@@ -111,7 +112,11 @@ public class Replayer {
                 for (CommunicationType r : toRestore) {
                     ReplayerContext context = new ReplayerContext(startDate);
                     context.bpelEngine = (BpelEngineImpl) engine;
-                    context.init(r, scheduler);
+                    if (r.getInstanceType() == InstanceType.LIVE) {
+                    	context.initLive(r, scheduler);
+                    } else { 	
+                    	context.init(r, scheduler);
+                    }
                     contexts.add(context);
                 }
             }
@@ -122,16 +127,21 @@ public class Replayer {
     
                 for (ReplayerContext c : contexts) {
                     c.answers.remainingExchanges(remainingExchanges);
+
+                    if (remainingExchanges.size() > 0) {
+                    	//throw new RemainingExchangesException(remainingExchanges);
+                    	//log remaining exchanges for now
+                    	__log.info("Remaining exchanges for process type --- " + c.replayerConfig.getProcessType().toString() + ":");
+                    	for (Exchange e : remainingExchanges) {
+                    		__log.info(e.toString());
+                    		__log.info("--------");
+                    	}
+                    } else {
+                    	__log.info("No remaining exchanges left for process type --- " + c.replayerConfig.getProcessType().toString());
+                    }
+                    
                 }
-                if (remainingExchanges.size() > 0) {
-                	//throw new RemainingExchangesException(remainingExchanges);
-                	//log remaining exchanges for now
-                	__log.debug("Remaining exchanges :");
-                	for (Exchange e : remainingExchanges) {
-                		__log.debug(e.toString());
-                		__log.debug("--------");
-                	}
-                }
+                	
             }
     
             List<Long> r = new ArrayList<Long>();
@@ -248,9 +258,11 @@ public class Replayer {
                                 // try to retrieve existing context first
                                 ReplayerContext context = null;
                                 for (ReplayerContext c : contexts) {
-                                	if ( c.replayerConfig != null ) 
-                                		if ( c.replayerConfig.getProcessType() == p.getPID() ) 
+                                	if ( c.replayerConfig != null ) { 
+                                		if ( c.replayerConfig.getProcessType().equals(p.getProcessType()) ) { 
                                 			context = c;
+                                		}
+                                	}
                                 }
                                 if (context == null) {
                                     context = new ReplayerContext(null);
