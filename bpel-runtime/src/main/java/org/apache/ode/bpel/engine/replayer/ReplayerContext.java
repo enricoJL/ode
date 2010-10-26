@@ -232,7 +232,7 @@ public class ReplayerContext {
         
         final List<Exchange> exchangeList = r.getExchangeList();
 
-        for (int i = 1; i < exchangeList.size(); i++) {
+        for (int i = 0; i < exchangeList.size(); i++) {
             Exchange e = exchangeList.get(i);
             // We skip failures, because INVOKE_CHECK job is not handled by
             // replayer
@@ -256,12 +256,14 @@ public class ReplayerContext {
         
         final List<Exchange> exchangeList = r.getExchangeList();
 
-        for (int i = 1; i < exchangeList.size(); i++) {
+        for (int i = 0; i < exchangeList.size(); i++) {
             Exchange e = exchangeList.get(i);
             // We skip failures, because INVOKE_CHECK job is not handled by
             // replayer
             if (e.getType() == ExchangeType.P && !e.isSetFailure()) {
                 answers.add(e);
+            } else if (e.getType() == ExchangeType.M && e.getOut() != null) {
+           		replies.add(e);
             }
         }
 

@@ -136,8 +136,8 @@ public class ReplayerBpelRuntimeContextImpl extends BpelRuntimeContextImpl {
         AnswerResult answerResult = replayerContext.answers.fetchAnswer(partnerLink.partnerLink.partnerRolePortType.getQName(), operation.getName(), outgoingMessage, getCurrentEventDateTime());
         
 		String outgoingstr = DOMUtils.domToString(outgoingMessage).replaceAll("\\s", "").substring(36);
-		String instr = answerResult.e.getIn().toString().replaceAll("\\s", ""); 
-		int isSameMessage = instr.compareTo(outgoingstr);
+		String instr = answerResult.e == null ? null : answerResult.e.getIn().toString().replaceAll("\\s", ""); 
+		int isSameMessage = instr == null ? -1 : outgoingstr.compareTo(instr);
         
         if (answerResult.isLive) {
             return super.invoke(aid, partnerLink, operation, outgoingMessage, channel);
@@ -289,7 +289,7 @@ public class ReplayerBpelRuntimeContextImpl extends BpelRuntimeContextImpl {
             mex.setResponse(message);
             mex.setStatus(Status.RESPONSE.toString());
             
-            AnswerResult answerResult = replayerContext.replies.fetchAnswer(mex.getPortType(), opName, msg, null);
+            AnswerResult answerResult = replayerContext.replies.fetchAnswer(plinkInstnace.partnerLink.myRolePortType.getQName(), opName, msg, null);
             String msgstr = DOMUtils.domToString(msg).replaceAll("\\s", "").substring(36);
     		String outstr = answerResult.e.getOut().toString().replaceAll("\\s", ""); 
     		int isSameMessage = outstr.compareTo(msgstr);

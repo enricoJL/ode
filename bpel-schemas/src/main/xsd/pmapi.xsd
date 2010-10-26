@@ -118,8 +118,8 @@
         <sequence>
             <element name="processType" type="QName" />
             <element name="rollbackOnFault" type="boolean" minOccurs="0" default="true"/>
-            <element name="startMessageType" type="pmapi:StartMessageType" minOccurs="0" default="mock"/>
             <element name="invokeExternalPermission" type="boolean" minOccurs="0" default="false"/>
+            <element name="startMessageType" type="pmapi:StartMessageType" minOccurs="0" default="mock"/>
 
             <element name="serviceConfig" maxOccurs="unbounded">
                 <complexType>

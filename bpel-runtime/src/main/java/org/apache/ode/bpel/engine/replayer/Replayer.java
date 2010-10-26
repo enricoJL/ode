@@ -126,31 +126,43 @@ public class Replayer {
                 List<Exchange> remainingExchanges = new ArrayList<Exchange>();
     
                 for (ReplayerContext c : contexts) {
+                	remainingExchanges.clear();
                     c.answers.remainingExchanges(remainingExchanges);
 
                     if (remainingExchanges.size() > 0) {
                     	//throw new RemainingExchangesException(remainingExchanges);
                     	//log remaining exchanges for now
-                    	__log.info("Remaining invokes for process type --- " + c.replayerConfig.getProcessType().toString() + ":");
+                    	String log = "Remaining invokes for process type " + c.replayerConfig.getProcessType().toString() + ":";
+                    	log = log + "\n::They could have been unreached by the new instance or the outgoing messages as changed.";
+                    	log = log + "\n===============================================\n";
                     	for (Exchange e : remainingExchanges) {
-                    		__log.info(e.toString());
-                    		__log.info("--------");
+                    		log = log + e.toString();
+                    		log = log + "\n-----------------------------------------------\n";
                     	}
+                    	log = log + "===================================================";
+                    	__log.info(log);
                     } else {
-                    	__log.info("No remaining invokes left for process type --- " + c.replayerConfig.getProcessType().toString());
+                    	__log.info("No remaining invokes left for process type " + c.replayerConfig.getProcessType().toString()
+                    			+ "\n==================================================");
                     }
                     
+                    remainingExchanges.clear();
                     c.replies.remainingExchanges(remainingExchanges);
                     
                     if (remainingExchanges.size() > 0) {
                     	//log remaining replies for now
-                    	__log.info("Remaining replies for process type --- " + c.replayerConfig.getProcessType().toString() + ":");
+                    	String log = "Remaining replies for process type " + c.replayerConfig.getProcessType().toString() + ":";
+                    	log = log + "\n::Replies have been reached but the outgoing messages has changed.";
+                    	log = log + "\n===============================================\n";
                     	for (Exchange e : remainingExchanges) {
-                    		__log.info(e.toString());
-                    		__log.info("--------");
+                    		log = log + e.toString();
+                    		log = log + "\n-----------------------------------------------\n";
                     	}
+                    	log = log + "===================================================";
+                    	__log.info(log);
                     } else {
-                    	__log.info("No remaining replies left for process type --- " + c.replayerConfig.getProcessType().toString());
+                    	__log.info("No remaining replies left for process type " + c.replayerConfig.getProcessType().toString()
+                    			+ "\n==================================================");
                     }
                     
                 }
