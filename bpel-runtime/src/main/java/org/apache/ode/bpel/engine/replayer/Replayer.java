@@ -50,7 +50,7 @@ import org.apache.ode.bpel.iapi.Scheduler.JobDetails;
 import org.apache.ode.bpel.iapi.Scheduler.JobType;
 import org.apache.ode.bpel.pmapi.CommunicationType;
 import org.apache.ode.bpel.pmapi.ExchangeType;
-import org.apache.ode.bpel.pmapi.InstanceType;
+import org.apache.ode.bpel.pmapi.StartMessageType;
 import org.apache.ode.bpel.pmapi.FaultType;
 import org.apache.ode.bpel.pmapi.GetCommunication;
 import org.apache.ode.bpel.pmapi.GetCommunicationResponse;
@@ -112,7 +112,7 @@ public class Replayer {
                 for (CommunicationType r : toRestore) {
                     ReplayerContext context = new ReplayerContext(startDate);
                     context.bpelEngine = (BpelEngineImpl) engine;
-                    if (r.getInstanceType() == InstanceType.LIVE) {
+                    if (r.getStartMessageType() == StartMessageType.LIVE) {
                     	context.initLive(r, scheduler);
                     } else { 	
                     	context.init(r, scheduler);
@@ -131,13 +131,26 @@ public class Replayer {
                     if (remainingExchanges.size() > 0) {
                     	//throw new RemainingExchangesException(remainingExchanges);
                     	//log remaining exchanges for now
-                    	__log.info("Remaining exchanges for process type --- " + c.replayerConfig.getProcessType().toString() + ":");
+                    	__log.info("Remaining invokes for process type --- " + c.replayerConfig.getProcessType().toString() + ":");
                     	for (Exchange e : remainingExchanges) {
                     		__log.info(e.toString());
                     		__log.info("--------");
                     	}
                     } else {
-                    	__log.info("No remaining exchanges left for process type --- " + c.replayerConfig.getProcessType().toString());
+                    	__log.info("No remaining invokes left for process type --- " + c.replayerConfig.getProcessType().toString());
+                    }
+                    
+                    c.replies.remainingExchanges(remainingExchanges);
+                    
+                    if (remainingExchanges.size() > 0) {
+                    	//log remaining replies for now
+                    	__log.info("Remaining replies for process type --- " + c.replayerConfig.getProcessType().toString() + ":");
+                    	for (Exchange e : remainingExchanges) {
+                    		__log.info(e.toString());
+                    		__log.info("--------");
+                    	}
+                    } else {
+                    	__log.info("No remaining replies left for process type --- " + c.replayerConfig.getProcessType().toString());
                     }
                     
                 }
@@ -281,7 +294,7 @@ public class Replayer {
                                 runtimeContext.execute();
                                 
                                 //live instance case
-                                //creating all message exchanges after process instance started
+                                //creating all input message exchanges after process instance started
                                 if (context.replayerConfig != null) {
                                 	final List<Exchange> exchangeList = context.replayerConfig.getExchangeList();
 	                                for (int i = 0; i < exchangeList.size(); i++) {

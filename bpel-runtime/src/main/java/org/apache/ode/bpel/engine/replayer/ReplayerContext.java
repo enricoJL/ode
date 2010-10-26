@@ -80,6 +80,7 @@ public class ReplayerContext {
     public final Date replayStartDate;
 
     public Answers answers = new Answers();
+    public Answers replies = new Answers();
 
     public class Answers {
         public Map<String, AnswersForKey> answersMap = new HashMap<String, AnswersForKey>();
@@ -120,15 +121,6 @@ public class ReplayerContext {
                 return new AnswerResult(false, fetchMockQuery(service, operation, outgoingMessage, cfg));
             } else if (cfg.getReplayType().isSetLive()) {
                 return new AnswerResult(true, null);
-//            } else if (cfg.getReplayType().isSetSync()) {
-//                String key = getAnswersKey(service, operation);
-//                AnswersForKey v = answersMap.get(key);
-//                Exchange e = v == null ? null : v.answerPos < v.answers.size() ? v.answers.get(v.answerPos) : null;
-//                if (e != null) {
-//                    v.answerPos++;
-//                    __log.debug("fetched " + e);
-//                }
-//            	return new AnswerResult(AnswerResult.SYNC, e);
             } else assert(false);
             return null;
         }
@@ -246,6 +238,8 @@ public class ReplayerContext {
             // replayer
             if (e.getType() == ExchangeType.P && !e.isSetFailure()) {
                 answers.add(e);
+            } else if (e.getType() == ExchangeType.M && e.getOut() != null) {
+           		replies.add(e);
             }
         }
         
@@ -347,22 +341,12 @@ public class ReplayerContext {
     }
     
     public static class AnswerResult {
-    	public static int LIVE = 1;
-    	public static int SYNC = 2;
         public final boolean isLive;
-        public final boolean isSync;
         public final Exchange e;
         public AnswerResult(boolean isLive, Exchange e) {
             super();
             this.isLive = isLive;
-            this.isSync = false;
             this.e = e;
-        }
-        public AnswerResult(int type, Exchange e) {
-        	super();
-        	this.isLive = type == LIVE;
-        	this.isSync = type == SYNC;
-        	this.e = e;
         }
     }
     

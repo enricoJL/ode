@@ -18,6 +18,9 @@
  */
 package org.apache.ode.bpel.engine.replayer;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.concurrent.Callable;
 
@@ -31,6 +34,8 @@ import org.apache.ode.bpel.dao.MessageDAO;
 import org.apache.ode.bpel.dao.MessageExchangeDAO;
 import org.apache.ode.bpel.dao.PartnerLinkDAO;
 import org.apache.ode.bpel.dao.ProcessInstanceDAO;
+import org.apache.ode.bpel.dao.ScopeDAO;
+import org.apache.ode.bpel.dao.XmlDataDAO;
 import org.apache.ode.bpel.engine.BpelEngineImpl;
 import org.apache.ode.bpel.engine.BpelProcess;
 import org.apache.ode.bpel.engine.BpelRuntimeContextImpl;
@@ -56,9 +61,12 @@ import org.apache.ode.utils.GUID;
 import org.apache.ode.utils.ObjectPrinter;
 import org.apache.xmlbeans.XmlObject;
 import org.apache.xmlbeans.XmlOptions;
+import org.apache.xmlbeans.impl.common.XmlObjectList;
+import org.apache.xmlbeans.impl.values.XmlObjectBase;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 /**
  * This class intercepts invocations on BpelRuntimeContextImpl and substitutes them as necessary during replaying. 
@@ -88,28 +96,55 @@ public class ReplayerBpelRuntimeContextImpl extends BpelRuntimeContextImpl {
 
     @Override
     public void checkInvokeExternalPermission() {
-        throw new IllegalStateException("Invoking external services is disabled during replaying");
+    	if (!replayerContext.replayerConfig.getInvokeExternalPermission()) {
+    		throw new IllegalStateException("Invoking external services is disabled during replaying");
+    	}
+    	// External invoke permission is necessary to implement replay in the context of an instance
+    	// migration from an old process schema to a new one, in cases there are new invokes not 
+    	// internal inserted in the instance replay.
+    }
+    
+    private boolean equivalentNodes(Node a, Node b) {
+    	
+    	if (a == null && b == null) 
+    		return true;    	
+    	else if (a == null || b == null)
+    		return false;
+    	
+    	if ( !a.getNodeName().equals(b.getNodeName()) )
+    		return false;
+    	else if ( a.getNodeValue() != null ) { 
+    		if ( !a.getNodeValue().equals(b.getNodeValue()) ) {
+    			return false;
+    		}
+    	}
+
+		Node tmp = a.getFirstChild();
+    	if (tmp == null) 
+    		a = a.getNextSibling();
+    	
+    	tmp = b.getFirstChild();
+    	if (tmp == null) 
+    		b = b.getNextSibling();
+   	
+    	return equivalentNodes(a, b);
     }
 
     @Override
     public String invoke(int aid, PartnerLinkInstance partnerLink, Operation operation, Element outgoingMessage, InvokeResponseChannel channel) throws FaultException {
         __log.debug("invoke");
         AnswerResult answerResult = replayerContext.answers.fetchAnswer(partnerLink.partnerLink.partnerRolePortType.getQName(), operation.getName(), outgoingMessage, getCurrentEventDateTime());
-
-//        if (answerResult.isSync) {
-//        	if (answerResult.e == null) {
-//        		// if it couldn't retrieve the answer, it means that the service type 
-//        		// has changed: invoke normally.
-//        		return super.invoke(aid, partnerLink, operation, outgoingMessage, channel);
-//        	} else {
-//            	// need to fetch answer from collaborative process, thus synchronizing 
-//        		// message exchanges with the other processes.
-//            	return null;        		
-//        	}
-//        } else 
+        
+		String outgoingstr = DOMUtils.domToString(outgoingMessage).replaceAll("\\s", "").substring(36);
+		String instr = answerResult.e.getIn().toString().replaceAll("\\s", ""); 
+		int isSameMessage = instr.compareTo(outgoingstr);
         
         if (answerResult.isLive) {
             return super.invoke(aid, partnerLink, operation, outgoingMessage, channel);
+        } else if (isSameMessage != 0) {
+        	//put back the exchange in the list
+        	replayerContext.answers.add(answerResult.e);
+        	return super.invoke(aid, partnerLink, operation, outgoingMessage, channel);
         } else {
             PartnerLinkDAO plinkDAO = fetchPartnerLinkDAO(partnerLink);
 
@@ -131,7 +166,6 @@ public class ReplayerBpelRuntimeContextImpl extends BpelRuntimeContextImpl {
                 // } catch (Exception e) {
                 // throw new FaultException(new QName("replayer", "replayer"), e);
                 // }
-                mexDao.setRequest(request);
             }
             
             Exchange answer = answerResult.e;
@@ -254,6 +288,14 @@ public class ReplayerBpelRuntimeContextImpl extends BpelRuntimeContextImpl {
             __log.debug("instance replied mexRef:" + mexRef + " " + DOMUtils.domToString(msg));
             mex.setResponse(message);
             mex.setStatus(Status.RESPONSE.toString());
+            
+            AnswerResult answerResult = replayerContext.replies.fetchAnswer(mex.getPortType(), opName, msg, null);
+            String msgstr = DOMUtils.domToString(msg).replaceAll("\\s", "").substring(36);
+    		String outstr = answerResult.e.getOut().toString().replaceAll("\\s", ""); 
+    		int isSameMessage = outstr.compareTo(msgstr);
+    		if (isSameMessage != 0) {
+    			replayerContext.replies.add(answerResult.e);
+    		}
         }
     }
 

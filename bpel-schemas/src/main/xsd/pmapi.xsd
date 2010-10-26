@@ -33,12 +33,14 @@
     <element name="event-info" type="pmapi:tEventInfo"/>
     <element name="event-info-list" type="pmapi:tEventInfoList"/>
 
-	<simpleType name="InstanceType">
+	
+	<simpleType name="StartMessageType">
 		<restriction base="string">
-            <enumeration value="initiator"/>
+            <enumeration value="mock"/>
             <enumeration value="live"/>
         </restriction>	
 	</simpleType>
+	
 	
     <simpleType name="ExchangeType">
         <restriction base="string">
@@ -116,7 +118,8 @@
         <sequence>
             <element name="processType" type="QName" />
             <element name="rollbackOnFault" type="boolean" minOccurs="0" default="true"/>
-            <element name="instanceType" type="pmapi:InstanceType" minOccurs="0" default="initiator"/>
+            <element name="startMessageType" type="pmapi:StartMessageType" minOccurs="0" default="mock"/>
+            <element name="invokeExternalPermission" type="boolean" minOccurs="0" default="false"/>
 
             <element name="serviceConfig" maxOccurs="unbounded">
                 <complexType>
