@@ -104,45 +104,22 @@ public class ReplayerBpelRuntimeContextImpl extends BpelRuntimeContextImpl {
     	// internal inserted in the instance replay.
     }
     
-    private boolean equivalentNodes(Node a, Node b) {
+    private boolean hasSameContent(String astr, String bstr) {
     	
-    	if (a == null && b == null) 
-    		return true;    	
-    	else if (a == null || b == null)
-    		return false;
-    	
-    	if ( !a.getNodeName().equals(b.getNodeName()) )
-    		return false;
-    	else if ( a.getNodeValue() != null ) { 
-    		if ( !a.getNodeValue().equals(b.getNodeValue()) ) {
-    			return false;
-    		}
-    	}
-
-		Node tmp = a.getFirstChild();
-    	if (tmp == null) 
-    		a = a.getNextSibling();
-    	
-    	tmp = b.getFirstChild();
-    	if (tmp == null) 
-    		b = b.getNextSibling();
-   	
-    	return equivalentNodes(a, b);
+		astr = astr.replaceAll("\\s", "").replaceAll("<[^>]*>", "");
+		bstr = bstr.replaceAll("\\s", "").replaceAll("<[^>]*>", "");
+		
+		return astr.compareTo(bstr) == 0;
     }
 
     @Override
     public String invoke(int aid, PartnerLinkInstance partnerLink, Operation operation, Element outgoingMessage, InvokeResponseChannel channel) throws FaultException {
         __log.debug("invoke");
         AnswerResult answerResult = replayerContext.answers.fetchAnswer(partnerLink.partnerLink.partnerRolePortType.getQName(), operation.getName(), outgoingMessage, getCurrentEventDateTime());
-        
-		String outgoingstr = DOMUtils.domToString(outgoingMessage).replaceAll("\\s", "").substring(36);
-		String instr = answerResult.e == null ? null : answerResult.e.getIn().toString().replaceAll("\\s", ""); 
-		int isSameMessage = instr == null ? -1 : outgoingstr.compareTo(instr);
-        
+                
         if (answerResult.isLive) {
             return super.invoke(aid, partnerLink, operation, outgoingMessage, channel);
-        } else if (isSameMessage != 0) {
-        	//put back the exchange in the list
+        } else if ( !hasSameContent(answerResult.e.getIn().toString(), DOMUtils.domToString(outgoingMessage)) ) {
         	replayerContext.answers.add(answerResult.e);
         	return super.invoke(aid, partnerLink, operation, outgoingMessage, channel);
         } else {
