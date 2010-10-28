@@ -81,6 +81,7 @@ public class ReplayerContext {
 
     public Answers answers = new Answers();
     public Answers replies = new Answers();
+    public Answers invokes = new Answers();
 
     public class Answers {
         public Map<String, AnswersForKey> answersMap = new HashMap<String, AnswersForKey>();
@@ -112,10 +113,12 @@ public class ReplayerContext {
                 AnswersForKey v = answersMap.get(key);
                 Exchange e = v == null ? null : v.answerPos < v.answers.size() ? v.answers.get(v.answerPos) : null;
                 if (e == null) {
-                    throw new IllegalStateException("answer for " + service + " " + operation + " at time " + currentEventDateTime + " not found, outgoing message was " + DOMUtils.domToString(outgoingMessage));
+//                    throw new IllegalStateException("answer for " + service + " " + operation + " at time " + currentEventDateTime + " not found, outgoing message was " + DOMUtils.domToString(outgoingMessage));
+                	__log.debug("not found");
+                } else {
+                    __log.debug("fetched " + e);
+                    v.answerPos++;
                 }
-                v.answerPos++;
-                __log.debug("fetched " + e);
                 return new AnswerResult(false, e);
             } else if (cfg.getReplayType().isSetMockQuery()) {
                 return new AnswerResult(false, fetchMockQuery(service, operation, outgoingMessage, cfg));

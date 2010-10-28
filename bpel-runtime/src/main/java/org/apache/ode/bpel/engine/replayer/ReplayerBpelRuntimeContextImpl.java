@@ -104,10 +104,22 @@ public class ReplayerBpelRuntimeContextImpl extends BpelRuntimeContextImpl {
     	// internal inserted in the instance replay.
     }
     
-    private boolean hasSameContent(String astr, String bstr) {
+    private boolean hasSameContent(Exchange exchange, Element outgoingMessage) {
     	
-		astr = astr.replaceAll("\\s", "").replaceAll("<[^>]*>", "");
-		bstr = bstr.replaceAll("\\s", "").replaceAll("<[^>]*>", "");
+    	if (exchange == null) {
+    		return false;
+    	}
+    	
+		String astr = exchange.getIn().toString().replaceAll("\\s", "");
+		//astr = astr.replaceAll("<[^>]*>", "");
+		astr = astr.replaceAll("xmlns[^=]*=\"[^\"]*\"", "");
+		astr = astr.replaceAll("<[^/:=>]*:", "<").replaceAll("</[^:>]*:", "</");
+		
+		String bstr = DOMUtils.domToString(outgoingMessage).replaceAll("\\s", "");
+		//bstr = bstr.replaceAll("<[^>]*>", "");
+		bstr = bstr.replaceAll("<\\?[^\\?]*\\?>", "");
+		bstr = bstr.replaceAll("xmlns[^=]*=\"[^\"]*\"", "");
+		bstr = bstr.replaceAll("<[^/:=>]*:", "<").replaceAll("</[^:>]*:", "</");
 		
 		return astr.compareTo(bstr) == 0;
     }
@@ -119,8 +131,10 @@ public class ReplayerBpelRuntimeContextImpl extends BpelRuntimeContextImpl {
                 
         if (answerResult.isLive) {
             return super.invoke(aid, partnerLink, operation, outgoingMessage, channel);
-        } else if ( !hasSameContent(answerResult.e.getIn().toString(), DOMUtils.domToString(outgoingMessage)) ) {
-        	replayerContext.answers.add(answerResult.e);
+        } else if ( !hasSameContent(answerResult.e, outgoingMessage) ) {
+        	if (answerResult.e != null) {
+        		replayerContext.invokes.add(answerResult.e);
+        	}
         	return super.invoke(aid, partnerLink, operation, outgoingMessage, channel);
         } else {
             PartnerLinkDAO plinkDAO = fetchPartnerLinkDAO(partnerLink);
