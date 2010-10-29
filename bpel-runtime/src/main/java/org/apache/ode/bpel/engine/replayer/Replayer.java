@@ -126,12 +126,10 @@ public class Replayer {
                 List<Exchange> remainingExchanges = new ArrayList<Exchange>();
     
                 for (ReplayerContext c : contexts) {
+
                 	remainingExchanges.clear();
                     c.answers.remainingExchanges(remainingExchanges);
-
                     if (remainingExchanges.size() > 0) {
-                    	//throw new RemainingExchangesException(remainingExchanges);
-                    	//log remaining exchanges for now
                     	String log = "Remaining invokes for process type " + c.replayerConfig.getProcessType().toString() + ":";
                     	log = log + "\n::These have not been reached by the new instance.";
                     	log = log + "\n===============================================\n";
@@ -165,9 +163,7 @@ public class Replayer {
                     
                     remainingExchanges.clear();
                     c.replies.remainingExchanges(remainingExchanges);
-                    
                     if (remainingExchanges.size() > 0) {
-                    	//log remaining replies for now
                     	String log = "Remaining replies for process type " + c.replayerConfig.getProcessType().toString() + ":";
                     	log = log + "\n::Replies have been reached but the outgoing messages have changed.";
                     	log = log + "\n===============================================\n";
@@ -181,14 +177,20 @@ public class Replayer {
                     	__log.info("No remaining replies left for process type " + c.replayerConfig.getProcessType().toString()
                     			+ "\n==================================================");
                     }
-                    
+
+                    if (c.runtimeContext == null) {
+                    	__log.info("No new instance has been created for process type " + c.replayerConfig.getProcessType().toString());
+                    }
+
                 }
                 	
             }
     
             List<Long> r = new ArrayList<Long>();
             for (ReplayerContext c : contexts) {
-                r.add(c.runtimeContext.getPid());
+            	if (c.runtimeContext != null) {
+            		r.add(c.runtimeContext.getPid());
+            	}
             }
     
             return r;
